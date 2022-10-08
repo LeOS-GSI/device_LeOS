@@ -29,9 +29,6 @@ for part in ab;do
 					apps_script=''
 					apps_name="LeOS"
 				fi
-				if [ "$arch" == "arm" ];then
-					vndk="vndk-binder32.mk"
-				fi
 				if [ "$arch" == "a64" ];then
 					vndk="vndk32.mk"
 				fi
