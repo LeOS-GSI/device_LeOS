@@ -58,7 +58,9 @@ PRODUCT_COPY_FILES += \
 PRODUCT_COPY_FILES += \
 	system/nfc/conf/libnfc-nci.conf:system/etc/libnfc-nci.conf \
 	device/LeOS/nfc/libnfc-nci.conf:system/phh/libnfc-nci-oreo.conf \
-	device/LeOS/nfc/libnfc-nci-huawei.conf:system/phh/libnfc-nci-huawei.conf
+	device/LeOS/nfc/libnfc-nci-huawei.conf:system/phh/libnfc-nci-huawei.conf \
+	device/LeOS/secure:system/phh/secure
+
 
 # LineageOS build may need this to make NFC work
 PRODUCT_PACKAGES += \
@@ -233,8 +235,8 @@ PRODUCT_COPY_FILES += \
 	device/LeOS/proprietary-files/umidigi/fs16xx_01s_mono.preset:system/phh/umidigi/fs16xx_01s_mono.preset
 
 #bootanimation
-PRODUCT_COPY_FILES += \
-	vendor/LeOS/bootanimation.zip:system/product/media/bootanimation.zip \
+#PRODUCT_COPY_FILES += \
+#	vendor/LeOS/bootanimation.zip:system/product/media/bootanimation.zip \
 
 PRODUCT_PACKAGES += \
     xiaomi-touch

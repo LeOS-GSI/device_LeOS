@@ -9,8 +9,7 @@ PRODUCT_NAME := lineage_arm64_bvN
 PRODUCT_DEVICE := LeOS_arm64_ab
 PRODUCT_BRAND := google
 PRODUCT_SYSTEM_BRAND := google
-PRODUCT_MODEL := LeOS
-PRODUCT_BROKEN_VERIFY_USES_LIBRARIES := true
+PRODUCT_MODEL := LeOS-20TD
 
 # Overwrite the inherited "emulator" characteristics
 PRODUCT_CHARACTERISTICS := device
