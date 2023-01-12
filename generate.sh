@@ -16,7 +16,7 @@ echo 'PRODUCT_MAKEFILES := \' > AndroidProducts.mk
 
 for part in a ab;do
 	for apps in vanilla;do
-		for arch in arm64 arm a64;do
+		for arch in arm64 a64;do
 			for su in yes no;do
 				apps_suffix=""
 				apps_script=""
@@ -29,9 +29,6 @@ for part in a ab;do
 					apps_suffix="v"
 					apps_script=''
 					apps_name="LeOS"
-				fi
-				if [ "$arch" == "arm" ];then
-					vndk="vndk-binder32.mk"
 				fi
 				if [ "$arch" == "a64" ];then
 					vndk="vndk32.mk"
