@@ -8,17 +8,14 @@ PRODUCT_COPY_FILES := \
 	frameworks/native/data/etc/android.hardware.bluetooth_le.xml:system/etc/permissions/android.hardware.bluetooth_le.xml \
 	frameworks/native/data/etc/android.hardware.usb.host.xml:system/etc/permissions/android.hardware.usb.host.xml \
 
-# Bluetooth Audio (System-side HAL, sysbta)
-PRODUCT_PACKAGES += \
-    audio.sysbta.default \
-    android.hardware.bluetooth.audio-service-system
-
-PRODUCT_COPY_FILES += \
-    device/LeOS/bluetooth/audio/config/sysbta_audio_policy_configuration.xml:$(TARGET_COPY_OUT_SYSTEM)/etc/sysbta_audio_policy_configuration.xml \
-    device/LeOS/bluetooth/audio/config/sysbta_audio_policy_configuration_7_0.xml:$(TARGET_COPY_OUTY_SYSTEM)/etc/sysbta_audio_policy_configuration_7_0.xml
-
 BOARD_PLAT_PRIVATE_SEPOLICY_DIR += device/LeOS/sepolicy
-PRODUCT_PACKAGE_OVERLAYS += device/LeOS/overlay
+
+PRODUCT_PACKAGE_OVERLAYS += \
+	device/LeOS/overlay \
+	device/LeOS/overlay-lineage
+
+PRODUCT_ENFORCE_RRO_EXCLUDED_OVERLAYS += \
+	device/LeOS/overlay-lineage/lineage-sdk
 
 $(call inherit-product, vendor/hardware_overlay/overlay.mk)
 $(call inherit-product, $(SRC_TARGET_DIR)/product/core_64_bit.mk)
@@ -35,17 +32,16 @@ PRODUCT_SYSTEM_DEFAULT_PROPERTIES += \
 	ro.build.version.security_patch=$(PLATFORM_SECURITY_PATCH) \
 	ro.adb.secure=0 \
 	ro.logd.auditd=true
-	
+
 #Huawei HiSuite (also other OEM custom programs I guess) it's of no use in AOSP builds
 PRODUCT_SYSTEM_DEFAULT_PROPERTIES += \
 	persist.sys.usb.config=adb \
-	ro.cust.cdrom=/dev/null	
+	ro.cust.cdrom=/dev/null
 
 #VNDK config files
 PRODUCT_COPY_FILES += \
 	device/LeOS/vndk-detect:system/bin/vndk-detect \
 	device/LeOS/vndk.rc:system/etc/init/vndk.rc \
-	device/LeOS/logger.rc:system/etc/init/logger.rc \
 
 #USB Audio
 PRODUCT_COPY_FILES += \
@@ -56,7 +52,6 @@ PRODUCT_COPY_FILES += \
 #   Provide default libnfc-nci.conf file for devices that does not have one in
 #   vendor/etc
 PRODUCT_COPY_FILES += \
-	system/nfc/conf/libnfc-nci.conf:system/etc/libnfc-nci.conf \
 	device/LeOS/nfc/libnfc-nci.conf:system/phh/libnfc-nci-oreo.conf \
 	device/LeOS/nfc/libnfc-nci-huawei.conf:system/phh/libnfc-nci-huawei.conf
 
@@ -68,7 +63,6 @@ PRODUCT_COPY_FILES += \
 	device/LeOS/rw-system.sh:system/bin/rw-system.sh \
 	device/LeOS/phh-on-data.sh:system/bin/phh-on-data.sh \
 	device/LeOS/phh-prop-handler.sh:system/bin/phh-prop-handler.sh \
-	device/LeOS/empty:system/xbin/empty \
 	device/LeOS/fixSPL/getSPL.arm:system/bin/getSPL
 
 PRODUCT_COPY_FILES += \
@@ -175,6 +169,7 @@ PRODUCT_PACKAGES += \
 	resetprop_phh
 
 PRODUCT_COPY_FILES += \
+	device/LeOS/phh-securize.sh:system/bin/phh-securize.sh \
 	device/LeOS/files/ota.sh:system/bin/ota.sh \
 
 PRODUCT_COPY_FILES += \

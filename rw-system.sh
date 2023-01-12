@@ -424,7 +424,7 @@ if getprop ro.vendor.build.fingerprint | grep -q -i \
     -e xiaomi/nitrogen -e xiaomi/whyred -e xiaomi/platina \
     -e xiaomi/ysl -e nubia/nx60 -e nubia/nx61 -e xiaomi/tulip \
     -e xiaomi/lavender -e xiaomi/olive -e xiaomi/olivelite -e xiaomi/pine \
-    -e Redmi/lancelot -e Redmi/galahad -e POCO/evergreen; then
+    -e POCO/evergreen; then
     setprop persist.sys.qcom-brightness "$(cat /sys/class/leds/lcd-backlight/max_brightness)"
 fi
 
@@ -581,10 +581,6 @@ if getprop ro.vendor.build.fingerprint | grep -iq -e Redmi/merlin; then
     setprop debug.sf.enable_hwc_vds 0
 fi
 
-if getprop ro.vendor.build.fingerprint | grep -iq -e Redmi/lancelot; then
-    setprop debug.sf.enable_hwc_vds 1
-fi
-
 if getprop ro.vendor.build.fingerprint | grep -iq -e Redmi/rosemary \
     -e Redmi/secret -e Redmi/maltose; then
     setprop debug.sf.latch_unsignaled 1
@@ -731,59 +727,35 @@ copyprop() {
         resetprop_phh "$1" "$(getprop "$2")"
     fi
 }
+if [ -f /system/phh/secure ] || [ -f /metadata/phh/secure ];then
     copyprop ro.build.device ro.vendor.build.device
     copyprop ro.system.build.fingerprint ro.vendor.build.fingerprint
     copyprop ro.bootimage.build.fingerprint ro.vendor.build.fingerprint
     copyprop ro.build.fingerprint ro.vendor.build.fingerprint
-    copyprop ro.system_ext.build.fingerprint ro.vendor.build.fingerprint
-    copyprop ro.product.build.fingerprint ro.vendor.build.fingerprint
     copyprop ro.build.device ro.vendor.product.device
     copyprop ro.product.system.device ro.vendor.product.device
     copyprop ro.product.device ro.vendor.product.device
     copyprop ro.product.system.device ro.product.vendor.device
     copyprop ro.product.device ro.product.vendor.device
-    copyprop ro.product.system_ext.device ro.vendor.product.device
-    copyprop ro.product.product.device ro.vendor.product.device
-    copyprop ro.product.system_ext.device ro.product.vendor.device
-    copyprop ro.product.product.device ro.product.vendor.device
     copyprop ro.product.system.name ro.vendor.product.name
     copyprop ro.product.name ro.vendor.product.name
-    copyprop ro.product.system.name ro.product.vendor.name
-    copyprop ro.product.name ro.product.vendor.name
-    copyprop ro.product.system_ext.name ro.vendor.product.name
-    copyprop ro.product.product.name ro.vendor.product.name
-    copyprop ro.product.system_ext.name ro.product.vendor.name
-    copyprop ro.product.product.name ro.product.vendor.name
+    copyprop ro.product.system.name ro.product.vendor.device
+    copyprop ro.product.name ro.product.vendor.device
     copyprop ro.system.product.brand ro.vendor.product.brand
     copyprop ro.product.brand ro.vendor.product.brand
-    copyprop ro.product.system.brand ro.vendor.product.brand
-    copyprop ro.product.system_ext.brand ro.vendor.product.brand
-    copyprop ro.product.product.brand ro.product.vendor.brand
-    copyprop ro.system.product.brand ro.product.vendor.brand
-    copyprop ro.product.brand ro.product.vendor.brand
-    copyprop ro.product.system.brand ro.product.vendor.brand
-    copyprop ro.product.system_ext.brand ro.product.vendor.brand
-    copyprop ro.product.product.brand ro.product.vendor.brand
     copyprop ro.product.system.model ro.vendor.product.model
     copyprop ro.product.model ro.vendor.product.model
-    copyprop ro.product.system_ext.model ro.vendor.product.model
-    copyprop ro.product.product.model ro.vendor.product.model
     copyprop ro.product.system.model ro.product.vendor.model
     copyprop ro.product.model ro.product.vendor.model
     copyprop ro.build.product ro.vendor.product.model
     copyprop ro.build.product ro.product.vendor.model
-    copyprop ro.product.system_ext.model ro.product.vendor.model
-    copyprop ro.product.product.model ro.product.vendor.model
     copyprop ro.system.product.manufacturer ro.vendor.product.manufacturer
     copyprop ro.product.manufacturer ro.vendor.product.manufacturer
-    copyprop ro.product.system.manufacturer ro.vendor.product.manufacturer
-    copyprop ro.product.product.manufacturer ro.vendor.product.manufacturer
-    copyprop ro.product.system_ext.manufacturer ro.vendor.product.manufacturer
     copyprop ro.system.product.manufacturer ro.product.vendor.manufacturer
     copyprop ro.product.manufacturer ro.product.vendor.manufacturer
-    copyprop ro.product.system.manufacturer ro.product.vendor.manufacturer
-    copyprop ro.product.product.manufacturer ro.product.vendor.manufacturer
-    copyprop ro.product.system_ext.manufacturer ro.product.vendor.manufacturer
+    (getprop ro.vendor.build.security_patch; getprop ro.keymaster.xxx.security_patch) |sort |tail -n 1 |while read v;do
+        [ -n "$v" ] && resetprop_phh ro.build.version.security_patch "$v"
+    done
 
     resetprop_phh ro.build.tags release-keys
     resetprop_phh ro.boot.vbmeta.device_state locked
@@ -792,10 +764,25 @@ copyprop() {
     resetprop_phh ro.boot.veritymode enforcing
     resetprop_phh ro.boot.warranty_bit 0
     resetprop_phh ro.warranty_bit 0
-    resetprop_phh ro.debuggable 0
     resetprop_phh ro.secure 1
     resetprop_phh ro.build.type user
     resetprop_phh ro.build.selinux 0
+
+    # Hide system/xbin/su
+    mount /mnt/phh/empty_dir /system/xbin
+    mount /mnt/phh/empty_dir /system/app/me.phh.superuser
+    mount /system/phh/empty /system/xbin/phh-su
+else
+    mkdir /mnt/phh/xbin
+    chmod 0755 /mnt/phh/xbin
+    chcon u:object_r:system_file:s0 /mnt/phh/xbin
+
+    #phh-su will bind over this empty file to make a real su
+    touch /mnt/phh/xbin/su
+    chcon u:object_r:system_file:s0 /mnt/phh/xbin/su
+
+    mount -o bind /mnt/phh/xbin /system/xbin
+fi
 
 for abi in "" 64;do
     f=/vendor/lib$abi/libstagefright_foundation.so
@@ -987,32 +974,16 @@ fi
 
 resetprop_phh ro.bluetooth.library_name libbluetooth.so
 
-board="$(getprop ro.board.platform)"
-
-if [ "$board" = atoll ] || [ "$board" = sm6250 ]; then
-	setprop ro.netflix.bsp_rev Q6250-19132-1
+if getprop ro.vendor.build.fingerprint |grep -iq xiaomi/cepheus -e xiaomi/nabu;then
+    setprop ro.netflix.bsp_rev Q855-16947-1
 fi
 
-if [ "$board" = msmnile ]; then
-	setprop ro.netflix.bsp_rev Q855-16947-1
+if getprop ro.vendor.build.fingerprint |grep -iq xiaomi/elish;then
+    setprop ro.netflix.bsp_rev Q8250-19134-1
 fi
 
-if [ "$board" = sm6150 ]; then
-	setprop ro.netflix.bsp_rev Q6150-17263-1
-fi
-
-if [ "$board" = mt6768 ]; then
-	setprop ro.netflix.bsp_rev MTK6768-19055-1
-fi
-
-if [ "$board" = lahaina ]; then
-	setprop ro.netflix.bsp_rev Q875-32774-1
-	resetprop_phh ro.config.media_vol_steps 25
-	resetprop_phh ro.config.media_vol_default 15
-fi
-
-if [ "$board" = universal8825 ];then
-	setprop ro.netflix.bsp_rev EXYNOS1280-34993-1
+if getprop ro.vendor.build.fingerprint |grep -qi redmi/curtana;then
+    setprop ro.netflix.bsp_rev Q6250-19132-1
 fi
 
 if getprop ro.vendor.build.fingerprint |grep -qi Nokia/Phoenix;then
@@ -1020,6 +991,12 @@ if getprop ro.vendor.build.fingerprint |grep -qi Nokia/Phoenix;then
     setprop debug.sf.latch_unsignaled 1
     setprop sys.use_fifo_ui 1
     setprop media.settings.xml "/vendor/etc/media_profiles_vendor.xml"
+fi
+
+if getprop ro.vendor.build.fingerprint |grep -iq xiaomi/renoir;then
+    setprop ro.netflix.bsp_rev Q875-32774-1
+    resetprop_phh ro.config.media_vol_steps 25
+    resetprop_phh ro.config.media_vol_default 15
 fi
 
 # Set props for Vsmart Live's fod

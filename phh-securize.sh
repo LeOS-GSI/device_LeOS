@@ -24,13 +24,12 @@ done
 mount -o remount,rw $MOUNTPOINT
 remount
 
-sed -i '/phhroot/,$d' $SYSTEM/bin/phh-prop-handler.sh
 touch $SYSTEM/phh/secure
 rm $SYSTEM/xbin/su
 rm $SYSTEM/bin/phh-su
 rm $SYSTEM/etc/init/su.rc
 rm $SYSTEM/bin/phh-securize.sh
-rm -Rf $SYSTEM/priv-app/SuperUser
+rm -Rf $SYSTEM/{app,priv-app}/me.phh.superuser/
 rm -Rf /data/su || true
 mount -o remount,ro $MOUNTPOINT
 sync
