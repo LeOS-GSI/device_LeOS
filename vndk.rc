@@ -82,3 +82,5 @@ on property:sys.phh.uninstall-ota=true
 on property:ro.vendor.radio.default_network=*
     setprop ro.telephony.default_network ${ro.vendor.radio.default_network}
 
+on property:persist.sys.phh.securize=*
+    exec u:r:phhsu_daemon:s0 root -- /system/bin/phh-prop-handler.sh "persist.sys.phh.securize"

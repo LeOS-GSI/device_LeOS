@@ -211,36 +211,16 @@ if [ "$1" == "persist.sys.phh.disable_soundvolume_effect" ];then
     exit
 fi
 
-phhroot() {
-	blockdev --setrw /dev/block/mapper/system
-	mount -o rw,remount /
-	touch /system/xbin/su || true
-	pm enable me.phh.superuser
-	mount /system/bin/phh-su /system/xbin/su
-	start sudaemon
-}
+if [ "$1" == "persist.sys.phh.securize" ];then
+    if [[ "$prop_value" != "true" && "$prop_value" != "false" ]]; then
+        exit 1
+    fi
 
-phhnoroot() {
-	blockdev --setrw /dev/block/mapper/system
-	mount -o rw,remount /
-	stop sudaemon
-	rm -rf /data/su || true
-	umount /system/xbin/su
-	rm -rf /system/xbin/su
-	pm disable me.phh.superuser
-}
-
-if [ "$1" == "persist.sys.phh.dynamic_superuser" ]; then
-	if [[ "$prop_value" != "0" && "$prop_value" != "1" ]] || [ -e /sbin/magisk ]; then
-		phhnoroot;
-		exit 1
-	fi
-
-	if [[ "$prop_value" == "1" ]]; then
-		phhroot;
-	else
-		phhnoroot;
-	fi
-	exit
+    if [[ "$prop_value" == "true" ]]; then
+        mkdir /metadata/phh
+        touch /metadata/phh/secure
+    else
+        rm /metadata/phh/secure
+    fi
+    exit
 fi
- 

@@ -26,7 +26,7 @@ allow init { sysfs sys_block_sdd }:dir r_dir_perms;
 allow init { sysfs sys_block_sdd }:file r_file_perms;
 allow init { sysfs sys_block_sdd }:lnk_file read;
 
-allowxperm vendor_init { teecd_data_file }:dir ioctl {
+allowxperm vendor_init { teecd_data_file }:dir ioctl { 
   FS_IOC_GET_ENCRYPTION_POLICY
   FS_IOC_SET_ENCRYPTION_POLICY
 };

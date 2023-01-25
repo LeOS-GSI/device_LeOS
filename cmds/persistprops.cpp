@@ -3,7 +3,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "device/LeOS/cmds/persistent_properties.pb.h"
+#include "device/phh/treble/cmds/persistent_properties.pb.h"
 #include <algorithm>
 #include <iostream>
 

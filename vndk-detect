@@ -1,6 +1,6 @@
 #!/system/bin/sh
 
-grep -oE 'init_[0-9_]+' /vendor/etc/selinux/vendor_sepolicy.cil | \
+grep -oE 'init_[0-9_]+' /vendor/etc/selinux/nonplat_sepolicy.cil | \
 	uniq | \
 	sort -n | \
 	head -n 1 | \
