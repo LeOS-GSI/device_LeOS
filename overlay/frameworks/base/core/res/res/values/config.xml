@@ -51,4 +51,5 @@
 	    <item>me.phh.treble.app</item>
     </string-array>
 
+    <string name="config_displayLightSensorType" translatable="false">android.sensor.light</string>
 </resources>

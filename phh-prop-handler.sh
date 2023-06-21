@@ -144,19 +144,9 @@ if [ "$1" == "persist.sys.phh.caf.audio_policy" ];then
         elif [ -f /vendor/etc/audio_policy_configuration_base.xml ];then
             mount /vendor/etc/audio_policy_configuration_base.xml /vendor/etc/audio_policy_configuration.xml
         fi
-
-        if [ -f /vendor/lib/hw/audio.bluetooth_qti.default.so ];then
-            cp /vendor/etc/a2dp_audio_policy_configuration.xml /mnt/phh
-            sed -i 's/bluetooth_qti/a2dp/' /mnt/phh/a2dp_audio_policy_configuration.xml
-            mount /mnt/phh/a2dp_audio_policy_configuration.xml /vendor/etc/a2dp_audio_policy_configuration.xml
-            chcon -h u:object_r:vendor_configs_file:s0 /vendor/etc/a2dp_audio_policy_configuration.xml
-            chmod 644 /vendor/etc/a2dp_audio_policy_configuration.xml
-        fi
     else
         umount /vendor/etc/audio_policy_configuration.xml
         umount /vendor/etc/audio/sku_$sku/audio_policy_configuration.xml
-        umount /vendor/etc/a2dp_audio_policy_configuration.xml
-        rm /mnt/phh/a2dp_audio_policy_configuration.xml
         if [ $(find /vendor/etc/audio -type f |wc -l) -le 3 ];then
             mount /mnt/phh/empty_dir /vendor/etc/audio
         fi
@@ -211,16 +201,20 @@ if [ "$1" == "persist.sys.phh.disable_soundvolume_effect" ];then
     exit
 fi
 
-if [ "$1" == "persist.sys.phh.securize" ];then
-    if [[ "$prop_value" != "true" && "$prop_value" != "false" ]]; then
+if [ "$1" == "persist.bluetooth.system_audio_hal.enabled" ]; then
+    if [[ "$prop_value" != "0" && "$prop_value" != "1" ]]; then
         exit 1
     fi
 
-    if [[ "$prop_value" == "true" ]]; then
-        mkdir /metadata/phh
-        touch /metadata/phh/secure
+    if [[ "$prop_value" == 1 ]]; then
+        setprop persist.bluetooth.bluetooth_audio_hal.disabled false
+        setprop persist.bluetooth.a2dp_offload.disabled true
+        resetprop_phh ro.bluetooth.a2dp_offload.supported false
     else
-        rm /metadata/phh/secure
+        resetprop_phh --delete persist.bluetooth.bluetooth_audio_hal.disabled
+        resetprop_phh --delete persist.bluetooth.a2dp_offload.disabled
+        resetprop_phh --delete ro.bluetooth.a2dp_offload.supported
     fi
+    restartAudio
     exit
 fi

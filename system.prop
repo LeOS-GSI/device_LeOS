@@ -15,6 +15,19 @@ ro.boot.realme.lockstate=0
 #Fixes fingerprint unlock delay
 persist.wm.enable_remote_keyguard_animation=0
 
+# Enable support of one-handed mode
+ro.support_one_handed_mode=true
+
+# Set the Bluetooth Class of Device
+# Service Field: 0x5A -> 90
+#    Bit 17: Networking
+#    Bit 19: Capturing
+#    Bit 20: Object Transfer
+#    Bit 22: Telephony
+# MAJOR_CLASS: 0x02 -> 2 (Phone)
+# MINOR_CLASS: 0x0C -> 12 (Smart Phone)
+bluetooth.device.class_of_device=90,2,12
+
 # Enable system-side generic bluetooth audio HAL
 persist.bluetooth.system_audio_hal.enabled=1
 # Set commonly-supported Bluetooth profiles to enabled
@@ -33,3 +46,6 @@ bluetooth.profile.pan.nap.enabled?=true
 bluetooth.profile.pan.panu.enabled?=true
 bluetooth.profile.pbap.server.enabled?=true
 bluetooth.profile.sap.server.enabled?=true
+
+# Samsung vendors default to a Samsung-specific gadget for MTP. Set this to use AOSP's functionfs MTP
+vendor.usb.use_ffs_mtp=1

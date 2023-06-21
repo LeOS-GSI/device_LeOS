@@ -84,6 +84,10 @@ fixSPL() {
 	if [ -z "$Arelease" ] || [ -z "$spl" ];then
 		return 0
 	fi
+    # Some devices will want true vbmeta_state and verifiedbootstate
+    # Setup those properties redirect for "keymaster" prop redirects
+    setprop ro.keymaster.xxx.vbmeta_state unlocked
+    setprop ro.keymaster.xxx.verifiedbootstate orange
 
     # Found on Cubot Pocket 3: trustkernel work only on stock model name or AOSP GSI model name
     if [ -f /vendor/bin/hw/android.hardware.keymaster@4.1-service.trustkernel ] && [ -f /proc/tkcore/tkcore_log ];then
@@ -772,9 +776,12 @@ if [ -f /system/phh/secure ] || [ -f /metadata/phh/secure ];then
     resetprop_phh ro.boot.veritymode enforcing
     resetprop_phh ro.boot.warranty_bit 0
     resetprop_phh ro.warranty_bit 0
+    resetprop_phh ro.debuggable 0
     resetprop_phh ro.secure 1
     resetprop_phh ro.build.type user
     resetprop_phh ro.build.selinux 0
+
+    resetprop_phh ro.adb.secure 1
 
     # Hide system/xbin/su
     mount /mnt/phh/empty_dir /system/xbin
@@ -1053,18 +1060,6 @@ if [ "$vndk" -le 27 ] && [ -f /vendor/bin/mnld ];then
     setprop persist.sys.phh.sdk_override /vendor/bin/mnld=26
 fi
 
-# Disable secondary watchdogs
-echo -n V > /dev/watchdog1
-
-# Fix watchdog issue on Samsung Galaxy A20s
-if getprop ro.vendor.build.fingerprint | grep -iq samsung/a20sub/a20s; then
-    echo -n V > /dev/watchdog0
-fi
-
-if getprop ro.vendor.build.fingerprint | grep -iq samsung/a11que;then
-	echo -n V > /dev/watchdog0
-fi
-	
 if [ "$vndk" -le 30 ];then
 	# On older vendor the default behavior was to disable color management
 	# Don't override vendor value, merely add a fallback
@@ -1108,10 +1103,6 @@ if [ -f /vendor/bin/ccci_rpcd ];then
     setprop debug.phh.props.ccci_rpcd vendor
 fi
 
-if getprop ro.vendor.build.fingerprint | grep -qi -e iaomi/mona; then
-    copyprop ro.product.manufacturer ro.product.vendor.manufacturer
-fi
-
 if getprop ro.vendor.build.fingerprint | grep -iq -e motorola/liber; then
   cp /vendor/etc/audio_policy_configuration.xml /mnt/phh/
   sed -i '/r_submix_audio_policy_configuration/a \t<xi:include href="/vendor/etc/a2dp_audio_policy_configuration.xml"/>' /mnt/phh/audio_policy_configuration.xml
@@ -1133,3 +1124,12 @@ fi
 
 mount -o bind /mnt/phh/empty_dir /vendor/app/qti-logkit
 mount -o bind /mnt/phh/empty_dir /vendor/app/qti-logkit-lite
+
+# Redirect vendor props for QCOM hwcomposer
+setprop debug.phh.props.omposer-service vendor
+
+# On those Unisoc chips, Android's bluetooth stack will try to send a LE_EXTENDED_SCAN command, which isn't actually supported
+# The support of that command inherits from a "le vendor version". Force this at 0 to disable the use of that command
+if getprop ro.vendor.gnsschip |grep -q marlin3lite;then
+    setprop persist.sys.bt.max_vendor_cap 0
+fi

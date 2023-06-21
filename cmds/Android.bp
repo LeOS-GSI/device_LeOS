@@ -254,3 +254,30 @@ cc_binary {
 		"libbinder",
 	],
 }
+
+cc_binary {
+	name: "slsi-ddiscaler",
+	srcs: [
+		"slsi-ddiscaler.cpp",
+	],
+	shared_libs: [
+		"vendor.samsung_slsi.hardware.ExynosHWCServiceTW@1.0",
+		"libutils",
+		"libhidlbase",
+	],
+}
+
+cc_binary {
+	name: "slsi-booted",
+	srcs: [
+		"slsi-booted.cpp",
+	],
+	shared_libs: [
+		"vendor.samsung_slsi.hardware.ExynosHWCServiceTW@1.0",
+		"libutils",
+		"libhidlbase",
+	],
+	init_rc: [
+		"slsi-booted.rc"
+	],
+}
