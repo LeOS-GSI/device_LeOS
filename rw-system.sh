@@ -84,6 +84,18 @@ fixSPL() {
 	if [ -z "$Arelease" ] || [ -z "$spl" ];then
 		return 0
 	fi
+    # Some devices will want true vbmeta_state and verifiedbootstate
+    # Setup those properties redirect for "keymaster" prop redirects
+    setprop ro.keymaster.xxx.vbmeta_state unlocked
+    setprop ro.keymaster.xxx.verifiedbootstate orange
+
+    # Found on Cubot Pocket 3: trustkernel work only on stock model name or AOSP GSI model name
+    if [ -f /vendor/bin/hw/android.hardware.keymaster@4.1-service.trustkernel ] && [ -f /proc/tkcore/tkcore_log ];then
+        setprop debug.phh.props.teed keymaster
+        # Process name is android.hardware.keymaster@4.1-service.trustkernel
+        setprop debug.phh.props.ice.trustkernel keymaster
+    fi
+
         setprop ro.keymaster.brn Android
 
         if getprop ro.vendor.build.fingerprint |grep -qiE 'samsung.*star.*lte';then
@@ -148,6 +160,7 @@ changeKeylayout() {
 
     if getprop ro.vendor.build.fingerprint | grep -iq \
         -e poco/ -e POCO/ -e redmi/ -e xiaomi/ ; then
+        setprop persist.sys.phh.evgrab 'uinput-egis;uinput-goodix;uinput-fpc'
         if [ ! -f /mnt/phh/keylayout/uinput-goodix.kl ]; then
           cp /system/phh/empty /mnt/phh/keylayout/uinput-goodix.kl
           chmod 0644 /mnt/phh/keylayout/uinput-goodix.kl
@@ -319,19 +332,21 @@ if [ "$(getprop ro.product.vendor.manufacturer)" = motorola ] && getprop ro.vend
     setprop persist.sys.overlay.devinputjack true
 fi
 
-if mount -o remount,rw /system; then
-    resize2fs "$(grep ' /system ' /proc/mounts | cut -d ' ' -f 1)" || true
-else
-    mount -o remount,rw /
-    major="$(stat -c '%D' /.|sed -E 's/^([0-9a-f]+)([0-9a-f]{2})$/\1/g')"
-    minor="$(stat -c '%D' /.|sed -E 's/^([0-9a-f]+)([0-9a-f]{2})$/\2/g')"
-    mknod /dev/tmp-phh b $((0x$major)) $((0x$minor))
-    blockdev --setrw /dev/tmp-phh
-    resize2fs /dev/root || true
-    resize2fs /dev/tmp-phh || true
+if ! getprop ro.vendor.build.fingerprint |grep samsung/;then
+    if mount -o remount,rw /system; then
+        resize2fs "$(grep ' /system ' /proc/mounts | cut -d ' ' -f 1)" || true
+    else
+        mount -o remount,rw /
+        major="$(stat -c '%D' /.|sed -E 's/^([0-9a-f]+)([0-9a-f]{2})$/\1/g')"
+        minor="$(stat -c '%D' /.|sed -E 's/^([0-9a-f]+)([0-9a-f]{2})$/\2/g')"
+        mknod /dev/tmp-phh b $((0x$major)) $((0x$minor))
+        blockdev --setrw /dev/tmp-phh
+        resize2fs /dev/root || true
+        resize2fs /dev/tmp-phh || true
+    fi
+    mount -o remount,ro /system || true
+    mount -o remount,ro / || true
 fi
-mount -o remount,ro /system || true
-mount -o remount,ro / || true
 
 for part in /dev/block/bootdevice/by-name/oppodycnvbk  /dev/block/platform/bootdevice/by-name/nvdata;do
     if [ -b "$part" ];then
@@ -581,10 +596,6 @@ if getprop ro.vendor.build.fingerprint | grep -iq -e Redmi/merlin; then
     setprop debug.sf.enable_hwc_vds 0
 fi
 
-if getprop ro.vendor.build.fingerprint | grep -iq -e Redmi/lancelot; then
-    setprop debug.sf.enable_hwc_vds 1
-fi
-
 if getprop ro.vendor.build.fingerprint | grep -iq -e Redmi/rosemary \
     -e Redmi/secret -e Redmi/maltose; then
     setprop debug.sf.latch_unsignaled 1
@@ -731,59 +742,35 @@ copyprop() {
         resetprop_phh "$1" "$(getprop "$2")"
     fi
 }
+if [ -f /system/phh/secure ] || [ -f /metadata/phh/secure ] || [ -f /data/adb/phh/secure ];then
     copyprop ro.build.device ro.vendor.build.device
     copyprop ro.system.build.fingerprint ro.vendor.build.fingerprint
     copyprop ro.bootimage.build.fingerprint ro.vendor.build.fingerprint
     copyprop ro.build.fingerprint ro.vendor.build.fingerprint
-    copyprop ro.system_ext.build.fingerprint ro.vendor.build.fingerprint
-    copyprop ro.product.build.fingerprint ro.vendor.build.fingerprint
     copyprop ro.build.device ro.vendor.product.device
     copyprop ro.product.system.device ro.vendor.product.device
     copyprop ro.product.device ro.vendor.product.device
     copyprop ro.product.system.device ro.product.vendor.device
     copyprop ro.product.device ro.product.vendor.device
-    copyprop ro.product.system_ext.device ro.vendor.product.device
-    copyprop ro.product.product.device ro.vendor.product.device
-    copyprop ro.product.system_ext.device ro.product.vendor.device
-    copyprop ro.product.product.device ro.product.vendor.device
     copyprop ro.product.system.name ro.vendor.product.name
     copyprop ro.product.name ro.vendor.product.name
-    copyprop ro.product.system.name ro.product.vendor.name
-    copyprop ro.product.name ro.product.vendor.name
-    copyprop ro.product.system_ext.name ro.vendor.product.name
-    copyprop ro.product.product.name ro.vendor.product.name
-    copyprop ro.product.system_ext.name ro.product.vendor.name
-    copyprop ro.product.product.name ro.product.vendor.name
+    copyprop ro.product.system.name ro.product.vendor.device
+    copyprop ro.product.name ro.product.vendor.device
     copyprop ro.system.product.brand ro.vendor.product.brand
     copyprop ro.product.brand ro.vendor.product.brand
-    copyprop ro.product.system.brand ro.vendor.product.brand
-    copyprop ro.product.system_ext.brand ro.vendor.product.brand
-    copyprop ro.product.product.brand ro.product.vendor.brand
-    copyprop ro.system.product.brand ro.product.vendor.brand
-    copyprop ro.product.brand ro.product.vendor.brand
-    copyprop ro.product.system.brand ro.product.vendor.brand
-    copyprop ro.product.system_ext.brand ro.product.vendor.brand
-    copyprop ro.product.product.brand ro.product.vendor.brand
     copyprop ro.product.system.model ro.vendor.product.model
     copyprop ro.product.model ro.vendor.product.model
-    copyprop ro.product.system_ext.model ro.vendor.product.model
-    copyprop ro.product.product.model ro.vendor.product.model
     copyprop ro.product.system.model ro.product.vendor.model
     copyprop ro.product.model ro.product.vendor.model
     copyprop ro.build.product ro.vendor.product.model
     copyprop ro.build.product ro.product.vendor.model
-    copyprop ro.product.system_ext.model ro.product.vendor.model
-    copyprop ro.product.product.model ro.product.vendor.model
     copyprop ro.system.product.manufacturer ro.vendor.product.manufacturer
     copyprop ro.product.manufacturer ro.vendor.product.manufacturer
-    copyprop ro.product.system.manufacturer ro.vendor.product.manufacturer
-    copyprop ro.product.product.manufacturer ro.vendor.product.manufacturer
-    copyprop ro.product.system_ext.manufacturer ro.vendor.product.manufacturer
     copyprop ro.system.product.manufacturer ro.product.vendor.manufacturer
     copyprop ro.product.manufacturer ro.product.vendor.manufacturer
-    copyprop ro.product.system.manufacturer ro.product.vendor.manufacturer
-    copyprop ro.product.product.manufacturer ro.product.vendor.manufacturer
-    copyprop ro.product.system_ext.manufacturer ro.product.vendor.manufacturer
+    (getprop ro.vendor.build.security_patch; getprop ro.keymaster.xxx.security_patch) |sort |tail -n 1 |while read v;do
+        [ -n "$v" ] && resetprop_phh ro.build.version.security_patch "$v"
+    done
 
     resetprop_phh ro.build.tags release-keys
     resetprop_phh ro.boot.vbmeta.device_state locked
@@ -792,10 +779,25 @@ copyprop() {
     resetprop_phh ro.boot.veritymode enforcing
     resetprop_phh ro.boot.warranty_bit 0
     resetprop_phh ro.warranty_bit 0
-    resetprop_phh ro.debuggable 0
     resetprop_phh ro.secure 1
     resetprop_phh ro.build.type user
     resetprop_phh ro.build.selinux 0
+
+    # Hide system/xbin/su
+    mount /mnt/phh/empty_dir /system/xbin
+    mount /mnt/phh/empty_dir /system/app/me.phh.superuser
+    mount /system/phh/empty /system/xbin/phh-su
+else
+    mkdir /mnt/phh/xbin
+    chmod 0755 /mnt/phh/xbin
+    chcon u:object_r:system_file:s0 /mnt/phh/xbin
+
+    #phh-su will bind over this empty file to make a real su
+    touch /mnt/phh/xbin/su
+    chcon u:object_r:system_file:s0 /mnt/phh/xbin/su
+
+    mount -o bind /mnt/phh/xbin /system/xbin
+fi
 
 for abi in "" 64;do
     f=/vendor/lib$abi/libstagefright_foundation.so
@@ -970,6 +972,9 @@ if getprop ro.vendor.build.fingerprint |grep -qiE -e ASUS_I006D -e ASUS_I003;the
 	setprop persist.sys.phh.fod.asus true
 fi
 
+# For Asus usb port picker
+setprop sys.usb.all_controllers "$(ls /sys/class/udc |tr ' ' ',')"
+
 if (getprop ro.vendor.build.fingerprint;getprop ro.odm.build.fingerprint) |grep -qiE '^oneplus/' ||
 	getprop ro.build.overlay.deviceid |grep -qiE -e '^RMX' -e '^CPH' ||
 	[ -n "$(getprop ro.separate.soft)" ];then
@@ -1007,8 +1012,6 @@ fi
 
 if [ "$board" = lahaina ]; then
 	setprop ro.netflix.bsp_rev Q875-32774-1
-	resetprop_phh ro.config.media_vol_steps 25
-	resetprop_phh ro.config.media_vol_default 15
 fi
 
 if [ "$board" = universal8825 ];then
@@ -1058,18 +1061,6 @@ if [ "$vndk" -le 27 ] && [ -f /vendor/bin/mnld ];then
     setprop persist.sys.phh.sdk_override /vendor/bin/mnld=26
 fi
 
-# Disable secondary watchdogs
-echo -n V > /dev/watchdog1
-
-# Fix watchdog issue on Samsung Galaxy A20s
-if getprop ro.vendor.build.fingerprint | grep -iq samsung/a20sub/a20s; then
-    echo -n V > /dev/watchdog0
-fi
-
-if getprop ro.vendor.build.fingerprint | grep -iq samsung/a11que;then
-	echo -n V > /dev/watchdog0
-fi
-	
 if [ "$vndk" -le 30 ];then
 	# On older vendor the default behavior was to disable color management
 	# Don't override vendor value, merely add a fallback
@@ -1113,10 +1104,6 @@ if [ -f /vendor/bin/ccci_rpcd ];then
     setprop debug.phh.props.ccci_rpcd vendor
 fi
 
-if getprop ro.vendor.build.fingerprint | grep -qi -e iaomi/mona; then
-    copyprop ro.product.manufacturer ro.product.vendor.manufacturer
-fi
-
 if getprop ro.vendor.build.fingerprint | grep -iq -e motorola/liber; then
   cp /vendor/etc/audio_policy_configuration.xml /mnt/phh/
   sed -i '/r_submix_audio_policy_configuration/a \t<xi:include href="/vendor/etc/a2dp_audio_policy_configuration.xml"/>' /mnt/phh/audio_policy_configuration.xml
@@ -1138,3 +1125,24 @@ fi
 
 mount -o bind /mnt/phh/empty_dir /vendor/app/qti-logkit
 mount -o bind /mnt/phh/empty_dir /vendor/app/qti-logkit-lite
+
+# Redirect vendor props for QCOM hwcomposer
+setprop debug.phh.props.omposer-service vendor
+
+# On those Unisoc chips, Android's bluetooth stack will try to send a LE_EXTENDED_SCAN command, which isn't actually supported
+# The support of that command inherits from a "le vendor version". Force this at 0 to disable the use of that command
+if getprop ro.vendor.gnsschip |grep -q marlin3lite;then
+    setprop persist.sys.bt.max_vendor_cap 0
+fi
+
+if getprop ro.boot.hardware.sku | grep -q -e fuxi -e nuwa -e ishtar; then
+    setprop ro.surface_flinger.set_idle_timer_ms 1000
+
+    setprop ro.surface_flinger.set_touch_timer_ms 800
+
+    setprop ro.surface_flinger.set_display_power_timer_ms 4000
+
+    setprop debug.sf.frame_rate_multiple_threshold 120
+
+    setprop persist.phh.xiaomi.fod.enrollment.id 4
+fi

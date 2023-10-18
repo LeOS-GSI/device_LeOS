@@ -22,6 +22,12 @@ on property:sys.boot_completed=1
 on property:persist.sys.phh.mainkeys=*
     setprop qemu.hw.mainkeys ${persist.sys.phh.mainkeys}
 
+on property:persist.sys.phh.asus.dt2w=*
+    exec u:r:phhsu_daemon:s0 root -- /system/bin/phh-prop-handler.sh "persist.sys.phh.asus.dt2w"
+
+on property:persist.sys.phh.asus.usb.port=*
+    exec u:r:phhsu_daemon:s0 root -- /system/bin/phh-prop-handler.sh "persist.sys.phh.asus.usb.port"
+
 on property:persist.sys.phh.oppo.dt2w=*
     exec u:r:phhsu_daemon:s0 root -- /system/bin/phh-prop-handler.sh "persist.sys.phh.oppo.dt2w"
 
@@ -33,6 +39,9 @@ on property:persist.sys.phh.oppo.usbotg=*
 
 on property:persist.sys.phh.xiaomi.dt2w=*
     exec u:r:phhsu_daemon:s0 root -- /system/bin/phh-prop-handler.sh "persist.sys.phh.xiaomi.dt2w"
+
+on property:persist.sys.phh.allow_binder_thread_on_incoming_calls=*
+    exec u:r:phhsu_daemon:s0 root -- /system/bin/phh-prop-handler.sh "persist.sys.phh.allow_binder_thread_on_incoming_calls"
 
 on property:persist.sys.phh.disable_audio_effects=*
     exec u:r:phhsu_daemon:s0 root -- /system/bin/phh-prop-handler.sh "persist.sys.phh.disable_audio_effects"
@@ -52,18 +61,9 @@ on property:persist.sys.phh.disable_soundvolume_effect=*
 on property:ro.sf.lcd_density=*
     restart surfaceflinger
 
-on property:persist.sys.phh.disable_a2dp_offload=0
-    setprop persist.sys.phh.disable_a2dp_offload false
+on property:persist.bluetooth.system_audio_hal.enabled=*
+    exec u:r:phhsu_daemon:s0 root -- /system/bin/phh-prop-handler.sh "persist.bluetooth.system_audio_hal.enabled"
 
-on property:persist.sys.phh.disable_a2dp_offload=1
-    setprop persist.sys.phh.disable_a2dp_offload true
-
-on property:persist.sys.phh.disable_a2dp_offload=*
-    setprop persist.bluetooth.bluetooth_audio_hal.disabled ${persist.sys.phh.disable_a2dp_offload}
-
-on property:persist.sys.phh.dynamic_superuser=*
-    exec u:r:phhsu_daemon:s0 root -- /system/bin/phh-prop-handler.sh "persist.sys.phh.dynamic_superuser"
- 
 on property:init.svc.ril-proxy=stopped && property:persist.sys.phh.restart_ril=true
     start ril-proxy
 
@@ -85,3 +85,11 @@ on property:sys.phh.uninstall-ota=true
 on property:ro.vendor.radio.default_network=*
     setprop ro.telephony.default_network ${ro.vendor.radio.default_network}
 
+# Set watchdog timer to 30 seconds and pet it every 10 seconds to get a 20 second margin
+service watchdogd-gsi /system/bin/watchdogd 10 20
+    class core
+    oneshot
+    seclabel u:r:watchdogd:s0
+
+on property:persist.sys.phh.securize=*
+    exec u:r:phhsu_daemon:s0 root -- /system/bin/phh-prop-handler.sh "persist.sys.phh.securize"

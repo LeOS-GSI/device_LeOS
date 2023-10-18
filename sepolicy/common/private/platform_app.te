@@ -1,0 +1,22 @@
+# Allow NFC service to be found
+allow platform_app nfc_service:service_manager find;
+
+# Allow FastCharge HAL service to be found
+hal_client_domain(platform_app, hal_lineage_fastcharge)
+
+# Allow LiveDisplay HAL service to be found
+hal_client_domain(platform_app, hal_lineage_livedisplay)
+
+# Allow PowerShare HAL service to be found
+hal_client_domain(platform_app, hal_lineage_powershare)
+
+# allow platform_app to create named pipes (used for realm support)
+allow platform_app fuse:fifo_file create;
+allow platform_app app_data_file:fifo_file create_file_perms;
+allow platform_app app_data_file:fifo_file open;
+allow platform_app rs_exec:file rx_file_perms;
+
+# Allow platform apps to execute files in /data
+allow platform_app app_data_file:file execute;
+
+allow platform_app app_data_file:{ lnk_file sock_file fifo_file } create_file_perms;

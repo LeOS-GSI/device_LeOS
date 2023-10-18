@@ -70,6 +70,23 @@ restartAudio() {
     setprop ctl.restart audio-hal-2-0
 }
 
+if [ "$1" == "persist.sys.phh.asus.dt2w" ]; then
+    if [[ "$prop_value" != "0" && "$prop_value" != "1" ]]; then
+        exit 1
+    fi
+    if [[ "$prop_value" == 1 ]];then
+        setprop persist.asus.dclick 1
+    else
+        setprop persist.asus.dclick 0
+    fi
+    exit
+fi
+
+if [ "$1" == "persist.sys.phh.asus.usb.port" ]; then
+        setprop persist.vendor.usb.controller.default "$prop_value"
+    exit
+fi
+
 if [ "$1" == "persist.sys.phh.xiaomi.dt2w" ]; then
     if [[ "$prop_value" != "0" && "$prop_value" != "1" ]]; then
         exit 1
@@ -110,6 +127,19 @@ if [ "$1" == "persist.sys.phh.oppo.usbotg" ]; then
     exit
 fi
 
+if [ "$1" == "persist.sys.phh.allow_binder_thread_on_incoming_calls" ]; then
+    if [[ "$prop_value" != "0" && "$prop_value" != "1" ]]; then
+        exit 1
+    fi
+
+    if [[ "$prop_value" == 1 ]];then
+        resetprop_phh ro.telephony.block_binder_thread_on_incoming_calls false
+    else
+        resetprop_phh --delete ro.telephony.block_binder_thread_on_incoming_calls
+    fi
+    exit
+fi
+
 if [ "$1" == "persist.sys.phh.disable_audio_effects" ];then
     if [[ "$prop_value" != "0" && "$prop_value" != "1" ]]; then
         exit 1
@@ -144,19 +174,9 @@ if [ "$1" == "persist.sys.phh.caf.audio_policy" ];then
         elif [ -f /vendor/etc/audio_policy_configuration_base.xml ];then
             mount /vendor/etc/audio_policy_configuration_base.xml /vendor/etc/audio_policy_configuration.xml
         fi
-
-        if [ -f /vendor/lib/hw/audio.bluetooth_qti.default.so ];then
-            cp /vendor/etc/a2dp_audio_policy_configuration.xml /mnt/phh
-            sed -i 's/bluetooth_qti/a2dp/' /mnt/phh/a2dp_audio_policy_configuration.xml
-            mount /mnt/phh/a2dp_audio_policy_configuration.xml /vendor/etc/a2dp_audio_policy_configuration.xml
-            chcon -h u:object_r:vendor_configs_file:s0 /vendor/etc/a2dp_audio_policy_configuration.xml
-            chmod 644 /vendor/etc/a2dp_audio_policy_configuration.xml
-        fi
     else
         umount /vendor/etc/audio_policy_configuration.xml
         umount /vendor/etc/audio/sku_$sku/audio_policy_configuration.xml
-        umount /vendor/etc/a2dp_audio_policy_configuration.xml
-        rm /mnt/phh/a2dp_audio_policy_configuration.xml
         if [ $(find /vendor/etc/audio -type f |wc -l) -le 3 ];then
             mount /mnt/phh/empty_dir /vendor/etc/audio
         fi
@@ -211,36 +231,46 @@ if [ "$1" == "persist.sys.phh.disable_soundvolume_effect" ];then
     exit
 fi
 
-phhroot() {
-	blockdev --setrw /dev/block/mapper/system
-	mount -o rw,remount /
-	touch /system/xbin/su || true
-	pm enable me.phh.superuser
-	mount /system/bin/phh-su /system/xbin/su
-	start sudaemon
-}
+if [ "$1" == "persist.bluetooth.system_audio_hal.enabled" ]; then
+    # Migrate from 0/1 to false/true first
+    if [[ "$prop_value" == "0" ]]; then
+        setprop persist.bluetooth.system_audio_hal.enabled false
+        exit 1
+    elif [[ "$prop_value" == "1" ]]; then
+        setprop persist.bluetooth.system_audio_hal.enabled true
+        exit 1
+    fi
 
-phhnoroot() {
-	blockdev --setrw /dev/block/mapper/system
-	mount -o rw,remount /
-	stop sudaemon
-	rm -rf /data/su || true
-	umount /system/xbin/su
-	rm -rf /system/xbin/su
-	pm disable me.phh.superuser
-}
+    if [[ "$prop_value" != "false" && "$prop_value" != "true" ]]; then
+        exit 1
+    fi
 
-if [ "$1" == "persist.sys.phh.dynamic_superuser" ]; then
-	if [[ "$prop_value" != "0" && "$prop_value" != "1" ]] || [ -e /sbin/magisk ]; then
-		phhnoroot;
-		exit 1
-	fi
-
-	if [[ "$prop_value" == "1" ]]; then
-		phhroot;
-	else
-		phhnoroot;
-	fi
-	exit
+    if [[ "$prop_value" == "true" ]]; then
+        setprop persist.bluetooth.bluetooth_audio_hal.disabled false
+        setprop persist.bluetooth.a2dp_offload.disabled true
+        resetprop_phh ro.bluetooth.a2dp_offload.supported false
+    else
+        resetprop_phh --delete persist.bluetooth.bluetooth_audio_hal.disabled
+        resetprop_phh --delete persist.bluetooth.a2dp_offload.disabled
+        resetprop_phh --delete ro.bluetooth.a2dp_offload.supported
+    fi
+    restartAudio
+    exit
 fi
- 
+
+if [ "$1" == "persist.sys.phh.securize" ];then
+    if [[ "$prop_value" != "true" && "$prop_value" != "false" ]]; then
+        exit 1
+    fi
+
+    if [[ "$prop_value" == "true" ]]; then
+        mkdir -p /metadata/phh
+        touch /metadata/phh/secure
+        mkdir -p /data/adb/phh
+        touch /data/adb/phh/secure
+    else
+        rm /metadata/phh/secure
+        rm /data/adb/phh/secure
+    fi
+    exit
+fi

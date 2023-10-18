@@ -22,7 +22,6 @@
 	<string name="config_icon_mask" translatable="false">"M50 0C77.6 0 100 22.4 100 50C100 77.6 77.6 100 50 100C22.4 100 0 77.6 0 50C0 22.4 22.4 0 50 0Z"</string>
 	<bool name="config_useRoundIcon">true</bool>
 
-	<string name="config_wallpaperCropperPackage">com.android.wallpaperpicker</string>
 	<bool name="config_unplugTurnsOnScreen">true</bool>
 	<integer name="config_multiuserMaximumUsers">5</integer>
 	<bool name="config_enableMultiUserUI">true</bool>
@@ -34,11 +33,6 @@
 	<dimen name="config_buttonCornerRadius">4.0dip</dimen>
 
 	<bool name="config_cellBroadcastAppLinks">true</bool>
-
-    <string-array name="config_biometric_sensors" translatable="false" >
-        <!-- ID0:Fingerprint:Strong -->
-        <item>0:2:15</item>
-    </string-array>
 
     <array name="config_availableColorModes">
         <!-- ColorDisplayManager.COLOR_MODE_NATURAL -->
@@ -57,4 +51,5 @@
 	    <item>me.phh.treble.app</item>
     </string-array>
 
+    <string name="config_displayLightSensorType" translatable="false">android.sensor.light</string>
 </resources>
